@@ -10,7 +10,7 @@ def hmac_sha512(key, data):
 
 def to_url(obj: Invoices, client_id: str) -> str:
     """
-    Convert an Invoice object and payment config to a VNPay URL.
+    Convert an Invoice object and payment config to a VNPay URL
     """
     params = OrderedDict([
         ("vnp_Amount", str(int(obj.Amount * 100))),
@@ -28,4 +28,4 @@ def to_url(obj: Invoices, client_id: str) -> str:
     ])
     query = "&".join(f"{k}={urllib.parse.quote_plus(str(v))}" for k, v in params.items())
     secure_hash = hmac_sha512(payment["vnp_HashSecret"], query)
-    return f"{payment["vnp_Url"]}?{query}&vnp_SecureHash={secure_hash}"
+    return f"{payment['vnp_Url']}?{query}&vnp_SecureHash={secure_hash}"
