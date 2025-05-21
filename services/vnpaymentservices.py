@@ -10,7 +10,7 @@ def hmac_sha512(key, data):
 
 def to_url(obj: Invoices, client_id: str) -> str:
     """
-    Convert an Invoice object and payment config to a VNPay URL
+    Convert an Invoice object and payment config to a VNPay URL.
     """
     params = OrderedDict([
         ("vnp_Amount", str(int(obj.Amount * 100))),
