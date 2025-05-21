@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from config.db import get_db
 from controller.invoices import add_invoice
 from controller.vnpayment import add_vnpayment
+from models.models import Invoices
 from schemas.payment import PaymentResponse
 from services.vnpaymentservices import to_url
 from globals import sessions
@@ -44,6 +45,13 @@ async def vnpayment_response(
     try:
         if item.vnp_ResponseCode != "00":
             raise HTTPException(status_code=400, detail="Payment failed")
+        invoice_item = db.query(Invoices).filter(Invoices.InvoiceId == item.vnp_TxnRef).first()
+        if invoice_item is None:
+            raise HTTPException(status_code=400, detail="Invoice not found")
+        invoice_item.Status = 1
+        db.commit()
+        db.refresh(invoice_item)
+        # Call the payment service
         payment_item = add_vnpayment(db, item)
         if payment_item is None:
             raise HTTPException(status_code=400, detail="Failed to add payment item")
