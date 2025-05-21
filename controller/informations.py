@@ -10,6 +10,9 @@ def create_information(
         information: CreateInformation,
         user_id: int = Depends(get_user_dependency(sessions))
     ): 
+    db_information = db.query(Info).filter(Info.UserId == user_id).first()
+    if db_information:
+        return None
     db_information = Info(
         FirstName=information.first_name,
         LastName=information.last_name,

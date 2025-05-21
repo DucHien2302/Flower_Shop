@@ -75,14 +75,14 @@ class SysUserRole(Base):
 
 class Carts(Base):
     __tablename__ = 'Carts'
-    id = Column(Integer, primary_key=True, index=True)
+    CartId = Column(String(128), primary_key=True, index=True)
     ProductId = Column(Integer, nullable=False)
     Quantity = Column(Integer, nullable=False)
     IsChecked = Column(Integer, nullable=False)
 
 class Invoices(Base):
     __tablename__ = 'Invoices'
-    id = Column(Integer, primary_key=True, index=True)
+    InvoiceId = Column(String(128), primary_key=True, index=True)
     UserId = Column(Integer, nullable=False)
     CreateAt = Column(DateTime, nullable=False)
     Price = Column(DECIMAL(10,2), nullable=False)
@@ -94,13 +94,14 @@ class InvoiceDetails(Base):
     __tablename__ = 'InvoiceDetails'
     id = Column(Integer, primary_key=True, index=True)
     ProductId = Column(Integer, nullable=False)
-    InvoiceId = Column(Integer, nullable=False)
+    InvoiceId = Column(String(128), nullable=False)
     Quantity = Column(Integer, nullable=False)
     Price = Column(DECIMAL(10, 2), nullable=False)
 
 class VnPayment(Base):
     __tablename__ = 'VnPayment'
-    TmnCode = Column(String(128), primary_key=True, index=True)
+    TxnRef = Column(String(128), primary_key=True, index=True)
+    TmnCode = Column(String(128), nullable=False)
     Amount = Column(DECIMAL(10, 2), nullable=False)
     BankCode = Column(String(128), nullable=False)
     BankTranNo = Column(String(128), nullable=False)
@@ -110,4 +111,3 @@ class VnPayment(Base):
     ResponseCode = Column(String(128), nullable=False)
     TransactionNo = Column(String(128), nullable=False)
     TransactionStatus = Column(String(128), nullable=False)
-    TxnRef = Column(String(128), nullable=False)
