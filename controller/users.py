@@ -13,8 +13,6 @@ def create_user(db: Session, user: UserAuth):
     db.refresh(db_user)
     # create instance sys_user_role
     db_sysUserRole = create_sysuserrole(db, db_user.id)
-    db.add(db_sysUserRole)
-    db.refresh(db_sysUserRole)
     return db_user
 
 def get_user(db: Session, user_id: int):
