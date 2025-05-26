@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import Invoices
+from models.models_db import Invoices
 from sqlalchemy import text
 
 def add_invoice(

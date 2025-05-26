@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import SysUser
+from models.models_db import SysUser
 from schemas.users import UserAuth
 from controller.sysuserrole import create_sysuserrole
 

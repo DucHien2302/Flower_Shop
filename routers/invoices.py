@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from config.db import get_db
 from controller.invoices import add_invoice
 from controller.vnpayment import add_vnpayment
-from models.models import Invoices
+from models.models_db import Invoices
 from schemas.payment import PaymentResponse
 from services.vnpaymentservices import to_url
 from globals import sessions

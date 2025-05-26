@@ -17,7 +17,7 @@ class CartResponse(BaseModel):
     ProductId: int
     Name: str
     ImageURL: str
-    StockQuantity: int
+    Quantity: int
     Price: float
     Amount: float
     FlowerTypeID: int

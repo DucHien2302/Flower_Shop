@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import Flower as FlowerModel
+from models.models_db import Flower as FlowerModel
 from schemas.flowers import FlowerCreate, FlowerUpdate
 from typing import List, Optional
 from fastapi import UploadFile, HTTPException
