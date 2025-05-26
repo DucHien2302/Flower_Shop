@@ -1,14 +1,26 @@
+import base64
+import os
 from fastapi import APIRouter, Depends, HTTPException, Cookie
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import uuid
 from config.db import get_db
-from schemas.carts import CartItem, CartDelete, CartSelected
-from controller.carts import get_cart_items, add_cart_item, delete_cart_item, update_cart_item, update_cart_item_selected
+from models.models_db import Carts
+from schemas.carts import CartItem, CartSelected
+from controller.carts import get_cart_items, add_cart_item, update_cart_item, update_cart_item_selected
 
 router = APIRouter(
     prefix="/carts"
 )
+
+BASE_MEDIA_PATH = "media/flowers/flowers_shop/"
+FLOWER_TYPE_MAP = {
+    1: "daisy",
+    2: "dandelion",
+    3: "rose",
+    4: "sunflower",
+    5: "tulip"
+}
 
 @router.get("/")
 async def get_cart(
@@ -20,6 +32,20 @@ async def get_cart(
             raise HTTPException(status_code=400, detail="Session ID not found")
         else:
             cart_items = get_cart_items(db, session_id)
+            for item in cart_items:
+                # Xây dựng đường dẫn hình ảnh dựa trên FlowerTypeID và ID sản phẩm
+                if item.FlowerTypeID in FLOWER_TYPE_MAP:
+                    folder_name = FLOWER_TYPE_MAP[item.FlowerTypeID]
+                    image_path_jpg = os.path.join(BASE_MEDIA_PATH, folder_name, f"{item.ProductId}.jpg")
+                    image_path_png = os.path.join(BASE_MEDIA_PATH, folder_name, f"{item.ProductId}.png")
+
+                # Kiểm tra file ảnh .jpg hoặc .png
+                if os.path.isfile(image_path_jpg):
+                    with open(image_path_jpg, "rb") as image_file:
+                        item.ImageURL = base64.b64encode(image_file.read()).decode("utf-8")
+                elif os.path.isfile(image_path_png):
+                    with open(image_path_png, "rb") as image_file:
+                        item.ImageURL = base64.b64encode(image_file.read()).decode("utf-8")
             return cart_items
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -51,21 +77,28 @@ async def add_cart(
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
     
-@router.delete("/")
+@router.delete("/{id}")
 async def delete_cart(
-    item: CartDelete,
+    id: int,  # truyền vào từ URL
     db: Session = Depends(get_db),
     session_id: str = Cookie(None)
 ):
     try:
         if session_id is None:
             raise HTTPException(status_code=400, detail="Session ID not found")
+
+        db_item = db.query(Carts).filter(
+            Carts.CartId == session_id,
+            Carts.ProductId == id
+        ).first()
+
+        if db_item:
+            db.delete(db_item)
+            db.commit()
+            return {"message": "Item deleted successfully"}
         else:
-            db_item = delete_cart_item(db, session_id, item.product_id)
-            if db_item:
-                return {"message": "Item deleted successfully"}
-            else:
-                raise HTTPException(status_code=404, detail="Item not found")
+            raise HTTPException(status_code=404, detail="Item not found")
+
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
     
