@@ -19,7 +19,7 @@ import tensorflow as tf
 import cv2
 import numpy as np
 from schemas.flowers import FlowerBase
-from models.models import Flower as FlowerModel
+from models.models_db import Flower as FlowerModel
 from dotenv import load_dotenv
 
 # Cấu hình logger

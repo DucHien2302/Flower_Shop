@@ -1,7 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from auth.authentication import get_user_dependency
-from models.models import Informations as Info, SysUser
+from models.models_db import Informations as Info, SysUser
 from schemas.informations import CreateInformation, UpdateInformation, ResponseInformation
 from globals import sessions
 

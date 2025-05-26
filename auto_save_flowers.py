@@ -1,7 +1,7 @@
 import os
 import random
 from sqlalchemy.orm import Session
-from models.models import Flower as FlowerModel
+from models.models_db import Flower as FlowerModel
 from config.db import FLOWER_TYPE_DIRS, get_db
 from decimal import Decimal
 

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import SysUserRole
+from models.models_db import SysUserRole
 
 def create_sysuserrole(db: Session, userId: int):
     db_sysUserRole = SysUserRole(

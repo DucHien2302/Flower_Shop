@@ -3,7 +3,7 @@ from collections import OrderedDict
 import hmac
 import hashlib
 from globals import payment
-from models.models import Invoices
+from models.models_db import Invoices
 
 def hmac_sha512(key, data):
     return hmac.new(key.encode(), data.encode(), hashlib.sha512).hexdigest()

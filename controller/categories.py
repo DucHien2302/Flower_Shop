@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from schemas.categories import CategoryCreate
-from models.models import Categories
+from models.models_db import Categories
 
 def create_category(db: Session, category: CategoryCreate) -> Categories:
     db_category = Categories(
