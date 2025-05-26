@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import VnPayment
+from models.models_db import VnPayment
 from schemas.payment import PaymentResponse
 
 def add_vnpayment(

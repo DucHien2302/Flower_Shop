@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 import tensorflow as tf
-from models.models import Products
+from models.models_db import Products
 from routers.flowers import preprocess_image
 from schemas.products import Product, ProductCreate, ProductUpdate
 from controller.products import create_product as create_product_controller

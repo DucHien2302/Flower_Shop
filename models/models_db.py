@@ -1,4 +1,4 @@
-from sqlalchemy import Date, DateTime, Column, Text, DECIMAL, func, Boolean
+from sqlalchemy import Date, DateTime, Column, Text, DECIMAL, func, Boolean, PrimaryKeyConstraint
 # from sqlalchemy.types import Integer,String
 from config.db import meta
 from sqlalchemy import Column, Integer, String
@@ -75,10 +75,14 @@ class SysUserRole(Base):
 
 class Carts(Base):
     __tablename__ = 'Carts'
-    CartId = Column(String(128), primary_key=True, index=True)
+    CartId = Column(String(128), index=True)
     ProductId = Column(Integer, nullable=False)
     Quantity = Column(Integer, nullable=False)
     IsChecked = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint('CartId', 'ProductId'),
+    )
 
 class Invoices(Base):
     __tablename__ = 'Invoices'

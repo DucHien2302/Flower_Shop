@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import Carts
+from models.models_db import Carts
 from schemas.carts import CartItem, CartResponse
 from sqlalchemy import text
 
@@ -90,7 +90,7 @@ def get_cart_items(
                 ProductId=item[0],
                 Name=item[1],
                 ImageURL=item[2],
-                StockQuantity=item[3],
+                Quantity=item[3],
                 Price=item[4],
                 Amount=item[5],
                 FlowerTypeID=item[6],

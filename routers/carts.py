@@ -34,8 +34,16 @@ async def add_cart(
         if session_id is None:
             session_id = str(uuid.uuid4()).replace("-", "")
             db_item = add_cart_item(db, item, session_id)
-            response = JSONResponse(content=db_item)
-            response.set_cookie(key="session_id", value=session_id, httponly=True)
+            item_dict = {k: v for k, v in db_item.__dict__.items() if not k.startswith("_")}
+            response = JSONResponse(content=item_dict)
+            response.set_cookie(
+                key="session_id",
+                value=session_id,
+                httponly=True,
+                samesite="None",  # hoặc "Lax", tùy luồng auth
+                secure=True,       # bắt buộc với samesite=None
+                max_age=60*60*24
+            )
             return response
         else:
             db_item = add_cart_item(db, item, session_id)
