@@ -3,7 +3,7 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from schemas.products import ProductCreate, ProductUpdate
-from models.models import Products
+from models.models_db import Products
 
 def create_product(db: Session, product_data: ProductCreate, file: UploadFile) -> Products:
     try:

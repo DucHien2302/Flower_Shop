@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 import uuid
 from sqlalchemy.orm import Session
 from config.db import get_db
-from models.models import SysUser
+from models.models_db import SysUser
 from schemas.users import UserAuth
 from controller.users import create_user, authenticate_user
 from globals import sessions, api_key_header
@@ -39,7 +39,14 @@ async def login(
     response = JSONResponse(content={"session_id": session_id, "isSuccess": True, "message": "Login successful"})
     response.headers["Authorization"] = session_id
     if session_id is not None:
-        response.set_cookie(key="session_id", value=session_id, httponly=True)
+        response.set_cookie(
+                key="session_id",
+                value=session_id,
+                httponly=True,
+                samesite="None",  # hoặc "Lax", tùy luồng auth
+                secure=True,       # bắt buộc với samesite=None
+                max_age=60*60*24
+            )
     return response
 
 @router.post("/logout")

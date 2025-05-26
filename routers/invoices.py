@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Request
 import uuid
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from config.db import get_db
 from controller.invoices import add_invoice
 from controller.vnpayment import add_vnpayment
-from models.models import Invoices
+from models.models_db import Invoices
 from schemas.payment import PaymentResponse
 from services.vnpaymentservices import to_url
 from globals import sessions
@@ -17,24 +18,58 @@ router = APIRouter(
 async def add_invoice_item(
     request: Request,
     db: Session = Depends(get_db),
-    session_id: str = Cookie(None),
+    session_id: str = Cookie(None)
 ):
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Session ID not found")
+    
+    user_id = sessions.get(session_id)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid session ID")
+        
+    invoice_id = str(uuid.uuid4()).replace("-", "")
+
     try:
-        if session_id is None:
-            raise HTTPException(status_code=400, detail="Session ID not found")
-        if session_id not in sessions:
-            raise HTTPException(status_code=400, detail="Session ID is invalid")        
-        user_id = sessions[session_id]
-        invoice_id = str(uuid.uuid4()).replace("-", "")
-        invoice_item = add_invoice(db, session_id, user_id, invoice_id)
-        if invoice_item is None:
-            raise HTTPException(status_code=400, detail="Failed to add invoice item")
-        # Call the payment service
-        payment_url = to_url(invoice_item, request.client.host)
-        if payment_url is None:
+        # Thiết lập biến output cho stored procedure
+        db.execute(text("SET @p_Amount := 0"))
+
+        # Gọi stored procedure AddInvoice
+        db.execute(
+            text("CALL AddInvoice(:p_CartId, :p_UserId, :p_InvoiceId, @p_Amount)"),
+            {
+                "p_CartId": session_id,
+                "p_UserId": user_id,
+                "p_InvoiceId": invoice_id
+            }
+        )
+        print("p_CartId: ", session_id)
+        print("p_UserId: ", user_id)
+        print("p_InvoiceId: ", invoice_id)
+
+        # Lấy số tiền tính từ stored procedure
+        result = db.execute(text("SELECT @p_Amount AS amount")).fetchone()
+        amount = result[0] if result else 0
+
+        print("amount", amount)
+
+        # Cập nhật hoá đơn trong bảng
+        invoice = db.query(Invoices).filter_by(InvoiceId=invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+
+        invoice.Price = amount
+        db.commit()
+        db.refresh(invoice)
+
+        # Tạo đường dẫn thanh toán
+        payment_url = to_url(invoice, request.client.host)
+        if not payment_url:
             raise HTTPException(status_code=400, detail="Failed to create payment URL")
+
         return {"payment_url": payment_url}
-    except Exception:
+
+    except Exception as e:
+        print(f"Error: {e}")  # debug log
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get("/vnpaymentresponse")

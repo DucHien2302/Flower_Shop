@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from schemas.flowertype import FlowerTypeCreate
-from models.models import FlowerTypes
+from models.models_db import FlowerTypes
 
 def create_flower_type(db: Session, flower_type: FlowerTypeCreate) -> FlowerTypes:
     db_flower_type = FlowerTypes(Name=flower_type.Name, Description=flower_type.Description)
