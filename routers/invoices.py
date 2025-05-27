@@ -69,7 +69,7 @@ async def add_invoice_item(
         return {"payment_url": payment_url}
 
     except Exception as e:
-        print(f"Error: {e}")  # debug log
+        print(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get("/vnpaymentresponse")
