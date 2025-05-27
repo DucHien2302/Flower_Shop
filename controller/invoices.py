@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from models.models_db import Invoices
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
 
 def add_invoice(
@@ -11,34 +10,30 @@ def add_invoice(
     invoice_id: str,
 ):
     try:
-        # Khởi tạo biến amount
-        db.execute(text("SET @amount := 0"))
-
-        # Gọi stored procedure
+        db.execute(text("SET @p_Amount := 0"))
         db.execute(
-            text("CALL AddInvoice(:cart_id, :invoice_id, :user_id, @amount)"),
+            text("CALL AddInvoice(:p_CartId, :p_UserId, :p_InvoiceId, @p_Amount)"),
             {
-                "cart_id": cart_id,
-                "invoice_id": invoice_id,
-                "user_id": user_id
+                "p_CartId": cart_id,
+                "p_UserId": user_id,
+                "p_InvoiceId": invoice_id
             }
         )
 
-        # Lấy giá trị từ biến output
-        amount_result = db.execute(text("SELECT @amount as amount")).fetchone()
-        amount = amount_result['amount'] if amount_result and 'amount' in amount_result else 0
+        result = db.execute(text("SELECT @p_Amount AS amount")).fetchone()
+        amount = result[0] if result else 0
 
-        # Tìm và cập nhật hóa đơn
-        invoice_item = db.query(Invoices).filter(Invoices.InvoiceId == invoice_id).first()
-        if not invoice_item:
+        invoice = db.query(Invoices).filter_by(InvoiceId=invoice_id).first()
+        if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
 
-        invoice_item.Price = amount
-        db.add(invoice_item)
+        invoice.Price = amount
+        invoice.Amount = amount - invoice.Discount
         db.commit()
-        db.refresh(invoice_item)
-        return invoice_item
+        db.refresh(invoice)
+        
+        return invoice
 
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        print(f"Error: {e}")  # debug log
+        raise HTTPException(status_code=500, detail="Internal Server Error")

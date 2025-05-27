@@ -1,8 +1,4 @@
-from fastapi.security import APIKeyHeader
-
-
 sessions = {}
-api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 payment = {
     "vnp_TmnCode": "HC3JP794",
     "vnp_HashSecret": "TGU6RJ2H7T10Z58R4JJVD7NVLM913CMN",
