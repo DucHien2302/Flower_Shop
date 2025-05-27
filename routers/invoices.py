@@ -30,37 +30,8 @@ async def add_invoice_item(
     invoice_id = str(uuid.uuid4()).replace("-", "")
 
     try:
-        # Thiết lập biến output cho stored procedure
-        db.execute(text("SET @p_Amount := 0"))
-
-        # Gọi stored procedure AddInvoice
-        db.execute(
-            text("CALL AddInvoice(:p_CartId, :p_UserId, :p_InvoiceId, @p_Amount)"),
-            {
-                "p_CartId": session_id,
-                "p_UserId": user_id,
-                "p_InvoiceId": invoice_id
-            }
-        )
-        print("p_CartId: ", session_id)
-        print("p_UserId: ", user_id)
-        print("p_InvoiceId: ", invoice_id)
-
-        # Lấy số tiền tính từ stored procedure
-        result = db.execute(text("SELECT @p_Amount AS amount")).fetchone()
-        amount = result[0] if result else 0
-
-        print("amount", amount)
-
-        # Cập nhật hoá đơn trong bảng
-        invoice = db.query(Invoices).filter_by(InvoiceId=invoice_id).first()
-        if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
-
-        invoice.Price = amount
-        db.commit()
-        db.refresh(invoice)
-
+        invoice = add_invoice(db, session_id, user_id, invoice_id)
+        
         # Tạo đường dẫn thanh toán
         payment_url = to_url(invoice, request.client.host)
         if not payment_url:
@@ -69,27 +40,55 @@ async def add_invoice_item(
         return {"payment_url": payment_url}
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}")  # debug log
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get("/vnpaymentresponse")
 async def vnpayment_response(
-    item: PaymentResponse,
+    vnp_Amount: str = None,
+    vnp_BankCode: str = None,
+    vnp_BankTranNo: str = None,
+    vnp_CardType: str = None,
+    vnp_OrderInfo: str = None,
+    vnp_PayDate: str = None,
+    vnp_ResponseCode: str = None,
+    vnp_TmnCode: str = None,
+    vnp_TransactionNo: str = None,
+    vnp_TransactionStatus: str = None,
+    vnp_TxnRef: str = None,
+    vnp_SecureHash: str = None,
     db: Session = Depends(get_db),
 ):
     try:
-        if item.vnp_ResponseCode != "00":
+        if vnp_ResponseCode != "00":
             raise HTTPException(status_code=400, detail="Payment failed")
-        invoice_item = db.query(Invoices).filter(Invoices.InvoiceId == item.vnp_TxnRef).first()
+
+        payment_response = PaymentResponse(
+            vnp_Amount=vnp_Amount,
+            vnp_BankCode=vnp_BankCode,
+            vnp_BankTranNo=vnp_BankTranNo,
+            vnp_CardType=vnp_CardType,
+            vnp_OrderInfo=vnp_OrderInfo,
+            vnp_PayDate=vnp_PayDate,
+            vnp_ResponseCode=vnp_ResponseCode,
+            vnp_TmnCode=vnp_TmnCode,
+            vnp_TransactionNo=vnp_TransactionNo,
+            vnp_TransactionStatus=vnp_TransactionStatus,
+            vnp_TxnRef=vnp_TxnRef,
+            vnp_SecureHash=vnp_SecureHash
+        )
+
+        invoice_item = db.query(Invoices).filter(Invoices.InvoiceId == vnp_TxnRef).first()
         if invoice_item is None:
             raise HTTPException(status_code=400, detail="Invoice not found")
         invoice_item.Status = 1
         db.commit()
         db.refresh(invoice_item)
-        # Call the payment service
-        payment_item = add_vnpayment(db, item)
+
+        payment_item = add_vnpayment(db, payment_response)
         if payment_item is None:
             raise HTTPException(status_code=400, detail="Failed to add payment item")
         return payment_item
-    except Exception:
+    except Exception as e:
+        print(f"Error in payment response: {str(e)}")  # Thêm log chi tiết lỗi
         raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -13,4 +13,4 @@ class PaymentResponse(BaseModel):
     vnp_TransactionNo: str
     vnp_TransactionStatus: str
     vnp_TxnRef: str
-    # vnp_SecureHash: str
+    vnp_SecureHash: str
