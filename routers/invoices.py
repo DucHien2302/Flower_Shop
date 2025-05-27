@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Request
 import uuid
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from config.db import get_db
 from controller.invoices import add_invoice
@@ -29,8 +30,8 @@ async def add_invoice_item(
     invoice_id = str(uuid.uuid4()).replace("-", "")
 
     try:
-        
         invoice = add_invoice(db, session_id, user_id, invoice_id)
+        
         # Tạo đường dẫn thanh toán
         payment_url = to_url(invoice, request.client.host)
         if not payment_url:
