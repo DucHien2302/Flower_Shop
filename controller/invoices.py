@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from models.models_db import Invoices
 from sqlalchemy import text
+from fastapi import HTTPException
 
 def add_invoice(
     db: Session,
@@ -8,23 +9,31 @@ def add_invoice(
     user_id: int,
     invoice_id: str,
 ):
-    amount_str = text("SET @amount := 0")
-    db.execute(amount_str)
-    sql = text("CALL AddInvoice(:cart_id, :invoice_id, :user_id, @amount)")
-    db.execute(sql, {
-        "cart_id": cart_id,
-        "invoice_id": invoice_id,
-        "user_id": user_id
-    })
-    # Lấy giá trị amount từ biến session
-    get_amount = text("SELECT @amount as amount")
-    amount_result = db.execute(get_amount).fetchone()
-    amount = amount_result['amount'] if amount_result else 0
+    try:
+        db.execute(text("SET @p_Amount := 0"))
+        db.execute(
+            text("CALL AddInvoice(:p_CartId, :p_UserId, :p_InvoiceId, @p_Amount)"),
+            {
+                "p_CartId": cart_id,
+                "p_UserId": user_id,
+                "p_InvoiceId": invoice_id
+            }
+        )
 
-    # Cập nhật trường price của Invoices
-    invoice_item = db.query(Invoices).filter(Invoices.InvoiceId == invoice_id).first()
-    invoice_item.Price = amount
-    db.add(invoice_item)
-    db.commit()
-    db.refresh(invoice_item)
-    return invoice_item
+        result = db.execute(text("SELECT @p_Amount AS amount")).fetchone()
+        amount = result[0] if result else 0
+
+        invoice = db.query(Invoices).filter_by(InvoiceId=invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+
+        invoice.Price = amount
+        invoice.Amount = amount - invoice.Discount
+        db.commit()
+        db.refresh(invoice)
+        
+        return invoice
+
+    except Exception as e:
+        print(f"Error: {e}")  # debug log
+        raise HTTPException(status_code=500, detail="Internal Server Error")
