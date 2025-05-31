@@ -6,7 +6,7 @@ from config.db import get_db
 from models.models_db import SysUser
 from schemas.users import UserAuth
 from controller.users import create_user, authenticate_user
-from globals import sessions, api_key_header
+from globals import sessions
 
 router = APIRouter(
     prefix="/users"
@@ -36,8 +36,7 @@ async def login(
         session_id = str(uuid.uuid4()).replace("-", "")
     
     sessions[session_id] = db_user.id
-    response = JSONResponse(content={"session_id": session_id, "isSuccess": True, "message": "Login successful"})
-    response.headers["Authorization"] = session_id
+    response = JSONResponse(content={"session_id": session_id, "user_id": db_user.id, "isSuccess": True, "message": "Login successful"})
     if session_id is not None:
         response.set_cookie(
                 key="session_id",
@@ -51,12 +50,20 @@ async def login(
 
 @router.post("/logout")
 async def logout(
-        session_id: str = Depends(api_key_header)
+        session_id: str = Cookie(None)
     ):
-    if session_id is None or session_id not in sessions:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    if session_id is None:
+        raise HTTPException(status_code=401, detail="No session ID provided")
+    
+    if session_id not in sessions:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    
     del sessions[session_id]
     response = JSONResponse(content={"message": "Logout successful"})
-    response.headers["Authorization"] = ""
-    response.delete_cookie(key="session_id")
+    response.delete_cookie(
+        key="session_id", 
+        httponly=True,
+        samesite="None",
+        secure=True
+    )
     return response
