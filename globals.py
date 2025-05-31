@@ -8,5 +8,6 @@ payment = {
     "vnp_CurrCode": "VND",
     "vnp_Locale": "vn",
     "vnp_OrderType": "other",
-    "vnp_ReturnUrl": "http://127.0.0.1:8000/invoices/vnpaymentresponse"
+    # "vnp_ReturnUrl": "http://127.0.0.1:8000/invoices/vnpaymentresponse"
+    "vnp_ReturnUrl": "https://8690-2402-800-63a9-e593-4061-a15b-a9d-b480.ngrok-free.app/invoices/vnpaymentresponse"
 }

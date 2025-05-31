@@ -103,8 +103,21 @@ def get_cart_items_is_checked(
     db: Session,
     cart_id: str
 ):
-    db_items = db.query(Carts).filter(
-        Carts.CartId == cart_id,
-        Carts.IsChecked == 1
-    ).all()
-    return db_items
+    sql = text("CALL GetCartsByIdWhereChecked(:p_CartId)")
+    result = db.execute(sql, {"p_CartId": cart_id})
+    db_items = result.fetchall()
+    cart_responses = []
+    for item in db_items:
+        cart_responses.append(
+            CartResponse(
+                ProductId=item[0],
+                Name=item[1],
+                ImageURL=item[2],
+                Quantity=item[3],
+                Price=item[4],
+                Amount=item[5],
+                FlowerTypeID=item[6],
+                IsChecked=item[7]
+            )
+        )
+    return cart_responses

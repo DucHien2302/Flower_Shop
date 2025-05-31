@@ -10,9 +10,7 @@ from services.vnpaymentservices import to_url
 from globals import sessions
 from datetime import datetime
 
-router = APIRouter(
-    prefix="/invoices",
-)
+router = APIRouter(prefix="/invoices")
 
 @router.post("/payment")
 async def add_invoice_item(
@@ -31,8 +29,6 @@ async def add_invoice_item(
 
     try:
         invoice = add_invoice(db, session_id, user_id, invoice_id)
-        
-        # Tạo đường dẫn thanh toán
         payment_url = to_url(invoice, request.client.host)
         if not payment_url:
             raise HTTPException(status_code=400, detail="Failed to create payment URL")
@@ -40,7 +36,7 @@ async def add_invoice_item(
         return {"payment_url": payment_url}
 
     except Exception as e:
-        print(f"Error: {e}")  # debug log
+        print(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get("/vnpaymentresponse")
@@ -61,8 +57,13 @@ async def vnpayment_response(
 ):
     try:
         if vnp_ResponseCode != "00":
-            raise HTTPException(status_code=400, detail="Payment failed")
+            raise HTTPException(status_code=400, detail=f"Payment failed with code: {vnp_ResponseCode}")
 
+        # TODO: Implement secure hash verification
+        # is_valid_hash = verify_secure_hash(...)
+        # if not is_valid_hash:
+        #     raise HTTPException(status_code=400, detail="Invalid secure hash")
+        
         payment_response = PaymentResponse(
             vnp_Amount=vnp_Amount,
             vnp_BankCode=vnp_BankCode,
@@ -80,16 +81,27 @@ async def vnpayment_response(
 
         invoice_item = db.query(Invoices).filter(Invoices.InvoiceId == vnp_TxnRef).first()
         if invoice_item is None:
-            raise HTTPException(status_code=400, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Invoice not found")
         
+        # Validate payment amount
+        payment_amount = int(vnp_Amount) / 100  # VNPay amount is x100
+        if payment_amount != float(invoice_item.Amount):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Payment amount mismatch: {payment_amount} vs {invoice_item.Amount}"
+            )
+        
+        # Update invoice status
         invoice_item.Status = 1
         db.commit()
         db.refresh(invoice_item)
 
+        # Record payment
         payment_item = add_vnpayment(db, payment_response)
         if payment_item is None:
-            raise HTTPException(status_code=400, detail="Failed to add payment item")
+            raise HTTPException(status_code=500, detail="Failed to record payment")
         
+        # Fetch user information
         user = db.query(SysUser).filter(SysUser.id == invoice_item.UserId).first()
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -98,6 +110,7 @@ async def vnpayment_response(
         if info is None:
             raise HTTPException(status_code=404, detail="User information not found")
         
+        # Fetch invoice details
         invoice_details = db.query(
             InvoiceDetails, 
             Products.Name,
@@ -133,10 +146,14 @@ async def vnpayment_response(
             ]
         }
         
+        # Process payment date
+        payment_date = None
         if vnp_PayDate:
-            payment_date = datetime.strptime(vnp_PayDate, "%Y%m%d%H%M%S").strftime("%d/%m/%Y %H:%M:%S")
-        else:
-            payment_date = None
+            try:
+                payment_date = datetime.strptime(vnp_PayDate, "%Y%m%d%H%M%S").strftime("%d/%m/%Y %H:%M:%S")
+            except ValueError as e:
+                print(f"Invalid payment date format: {vnp_PayDate}, error: {str(e)}")
+                payment_date = None
         
         payment_info = {
             "payment_id": payment_item.TxnRef,
@@ -153,6 +170,12 @@ async def vnpayment_response(
             "invoice_info": invoice_info,
             "payment_info": payment_info
         }
+    
+    except HTTPException as e:
+        raise e
+    except ValueError as e:
+        print(f"Data conversion error: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid data format")
     except Exception as e:
-        print(f"Error in payment response: {str(e)}")  # Thêm log chi tiết lỗi
+        print(f"Error in payment response: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -7,7 +7,7 @@ import uuid
 from config.db import get_db
 from models.models_db import Carts
 from schemas.carts import CartItem, CartSelected
-from controller.carts import get_cart_items, add_cart_item, update_cart_item, update_cart_item_selected
+from controller.carts import get_cart_items, add_cart_item, update_cart_item, update_cart_item_selected, get_cart_items_is_checked
 
 router = APIRouter(
     prefix="/carts"
@@ -32,6 +32,34 @@ async def get_cart(
             raise HTTPException(status_code=400, detail="Session ID not found")
         else:
             cart_items = get_cart_items(db, session_id)
+            for item in cart_items:
+                # Xây dựng đường dẫn hình ảnh dựa trên FlowerTypeID và ID sản phẩm
+                if item.FlowerTypeID in FLOWER_TYPE_MAP:
+                    folder_name = FLOWER_TYPE_MAP[item.FlowerTypeID]
+                    image_path_jpg = os.path.join(BASE_MEDIA_PATH, folder_name, f"{item.ProductId}.jpg")
+                    image_path_png = os.path.join(BASE_MEDIA_PATH, folder_name, f"{item.ProductId}.png")
+
+                # Kiểm tra file ảnh .jpg hoặc .png
+                if os.path.isfile(image_path_jpg):
+                    with open(image_path_jpg, "rb") as image_file:
+                        item.ImageURL = base64.b64encode(image_file.read()).decode("utf-8")
+                elif os.path.isfile(image_path_png):
+                    with open(image_path_png, "rb") as image_file:
+                        item.ImageURL = base64.b64encode(image_file.read()).decode("utf-8")
+            return cart_items
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+@router.get("/is-checked")
+async def get_cart_is_checked(
+    db: Session = Depends(get_db),
+    session_id: str = Cookie(None)
+):
+    try:
+        if session_id is None:
+            raise HTTPException(status_code=400, detail="Session ID not found")
+        else:
+            cart_items = get_cart_items_is_checked(db, session_id)
             for item in cart_items:
                 # Xây dựng đường dẫn hình ảnh dựa trên FlowerTypeID và ID sản phẩm
                 if item.FlowerTypeID in FLOWER_TYPE_MAP:
