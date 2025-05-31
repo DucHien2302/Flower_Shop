@@ -1,14 +1,11 @@
-from fastapi import Depends
 from sqlalchemy.orm import Session
-from auth.authentication import get_user_dependency
 from models.models_db import Informations as Info, SysUser
 from schemas.informations import CreateInformation, UpdateInformation, ResponseInformation
-from globals import sessions
 
 def create_information(
         db: Session, 
         information: CreateInformation,
-        user_id: int = Depends(get_user_dependency(sessions))
+        user_id: int,
     ): 
     db_information = db.query(Info).filter(Info.UserId == user_id).first()
     if db_information:
@@ -27,13 +24,18 @@ def create_information(
     db.refresh(db_information)
     return db_information
 
-def update_information(db: Session, information_id: int, information: UpdateInformation):
-    db_information = db.query(Info).filter(Info.id == information_id).first()
+def update_information(
+        db: Session, 
+        user_id: int,
+        information: UpdateInformation
+    ):
+    db_information = db.query(Info).filter(Info.UserId == user_id).first()
     if db_information:
         db_information.FirstName = information.first_name
         db_information.LastName = information.last_name
         db_information.FullName = information.first_name + " " + information.last_name
         db_information.DateOfBirth = information.date_of_birth
+        db_information.Gender = information.gender
         db_information.Address = information.address
         db.commit()
         db.refresh(db_information)

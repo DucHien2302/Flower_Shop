@@ -59,6 +59,7 @@ async def logout(
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     
     del sessions[session_id]
+    
     response = JSONResponse(content={"message": "Logout successful"})
     response.delete_cookie(
         key="session_id", 
