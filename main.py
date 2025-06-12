@@ -10,6 +10,7 @@ origins = [
     "http://localhost",
     "http://localhost:8080",
     "http://localhost:5173",
+    "http://localhost:5174",
     "https://your-frontend-domain.com",
     "http://192.168.10.132:5173",
     "http://192.168.1.194:5173"

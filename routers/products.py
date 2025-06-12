@@ -38,13 +38,12 @@ def create_product(
 
     return create_product_controller(db=db, product_data=product_data, file=image_file)
 
-@router.get("/", summary="Get a paginated list of all products with images in Base64")
-def get_products(page: int = 1, per_page: int = 10, db: Session = Depends(get_db)):
+@router.get("/", summary="Get a list of all products with images in Base64, no pagination")
+def get_products(db: Session = Depends(get_db)):
     """
-    Lấy danh sách sản phẩm với phân trang và trả về hình ảnh dưới dạng Base64.
+    Lấy danh sách tất cả sản phẩm và trả về hình ảnh dưới dạng Base64.
     Hỗ trợ cả file ảnh có phần mở rộng .jpg và .png.
     """
-    # Đường dẫn cơ sở cho hình ảnh
     BASE_MEDIA_PATH = "media/flowers/flowers_shop/"
     FLOWER_TYPE_MAP = {
         1: "daisy",
@@ -54,21 +53,14 @@ def get_products(page: int = 1, per_page: int = 10, db: Session = Depends(get_db
         5: "tulip"
     }
 
-    # Lấy tất cả sản phẩm từ cơ sở dữ liệu
     products = db.query(Products).all()
-
-    # Chuyển đổi danh sách sản phẩm thành dictionary
     products_data = []
     for product in products:
         product_dict = product.__dict__.copy()
-
-        # Xây dựng đường dẫn hình ảnh dựa trên FlowerTypeID và ID sản phẩm
         if product.FlowerTypeID in FLOWER_TYPE_MAP:
             folder_name = FLOWER_TYPE_MAP[product.FlowerTypeID]
             image_path_jpg = os.path.join(BASE_MEDIA_PATH, folder_name, f"{product.id}.jpg")
             image_path_png = os.path.join(BASE_MEDIA_PATH, folder_name, f"{product.id}.png")
-
-            # Kiểm tra file ảnh .jpg hoặc .png
             if os.path.isfile(image_path_jpg):
                 with open(image_path_jpg, "rb") as image_file:
                     product_dict["image_base64"] = base64.b64encode(image_file.read()).decode("utf-8")
@@ -79,18 +71,10 @@ def get_products(page: int = 1, per_page: int = 10, db: Session = Depends(get_db
                 product_dict["image_base64"] = None
         else:
             product_dict["image_base64"] = None
-
         products_data.append(product_dict)
-
-    # Phân trang dữ liệu
-    df = pd.DataFrame(products_data)
-    paginated_result = paginate_dataframe(df, page=page, per_page=per_page)
-
     return {
-        "data": paginated_result["data"],
-        "total_records": paginated_result["total_record"],
-        "page": paginated_result["page"],
-        "per_page": paginated_result["per_page"]
+        "data": products_data,
+        "total_records": len(products_data)
     }
 
 @router.get("/{product_id}", summary="Get a specific product by ID")
